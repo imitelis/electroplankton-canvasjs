@@ -3,6 +3,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let theta;
 let fishes = [];
 let bubbles = [];
 
@@ -17,18 +18,44 @@ function(event) {
     mouse.y = event.y;
 })
 
-
-class LaunchingCannon {
+class LaunchingLeaf {
     constructor(y) {
         this.x = 150;
-        this.y = y - canvas.height + 200;
+        this.y = canvas.height;
+        this.radius = 200;  
+        this.cannonWidth = 40;
+        this.cannonHeight = 100;
+        this.rotationAngle = 0; 
     }
 
     draw() {
+        // angle
+        let leaf_dx = mouse.x - this.x;
+        let leaf_dy = mouse.y - this.y;
+        theta = Math.atan2(leaf_dy, leaf_dx);
+        // leaf
+        ctx.save();
+        ctx.translate(200, canvas.height - 100);
+        ctx.rotate(theta + Math.PI/2);
         ctx.beginPath();
-        ctx.fillStyle = "brown";
-        ctx.fillRect(this.x, this.y, 50, canvas.height);
+        ctx.moveTo(0, -100);
+        ctx.lineTo(60, 100);
+        ctx.lineTo(-60, 100);
         ctx.closePath();
+        let leafGradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+        leafGradient.addColorStop(1, "rgba(0, 255, 0, 0.5)");
+        ctx.fillStyle = leafGradient;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, 100, 60, 0, Math.PI, false);
+        ctx.closePath();
+        ctx.fillStyle = leafGradient;
+        ctx.fill();
+        ctx.restore();
+    }
+
+    update(rotationAngle) {
+        this.rotationAngle = rotationAngle;
     }
 }
 
@@ -68,14 +95,14 @@ class PoppingBubble {
 }
 
 
-class HanebowFish {
+class HanenbowFish {
     constructor(x, y, angle){
         this.x = x;
         this.y = y;
-        this.angle = 0;
+        this.angle = angle;
         this.radius = 20;
         this.time = 0;
-        this.speed = 5;
+        this.speed = 6;
         this.accelerationY = 0;
     }
     draw(){
@@ -101,22 +128,22 @@ class HanebowFish {
         let bodyGradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
         bodyGradient.addColorStop(.5, "rgba(255, 20, 147, 0.4)")
         bodyGradient.addColorStop(1, "rgba(255, 20, 147, 0.8)")
-        ctx.fillStyle = bodyGradient
-        const isOpenMouth = Math.random() < 0.2;
+        ctx.fillStyle = bodyGradient;
         // mouth
+        const isOpenMouth = Math.random() < 0.2;
         if (isOpenMouth) {
-            ctx.arc(this.x, this.y, this.radius, Math.PI * 0.05 + this.angle, Math.PI * 1.95 + this.angle, false);
+            ctx.arc(this.x, this.y, this.radius, Math.PI * 0.05 + this.angle, Math.PI * 1.95 + this.angle, false);    
         } else {
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
         }
-        // ctx.arc(this.x, this.y, this.radius, Math.PI * 0.05 + this.angle, Math.PI * 1.95 + this.angle, false);
-        ctx.lineTo(this.x, this.y);
+        ctx.lineTo(this.x + 10*Math.cos(this.angle), this.y + 10*Math.sin(this.angle));
         ctx.fill();
         ctx.closePath();
         // eye
         ctx.beginPath();
-        let eye_x = this.x + (14 * Math.cos(this.angle));
-        let eye_y = this.y - (8 * Math.cos(this.angle));
+        let eye_y;
+        let eye_x = this.x + 8*Math.cos(this.angle - 0.85)
+        this.angle >= (3 * Math.PI / 2) || this.angle < (Math.PI / 2) ? eye_y = this.y + 12*Math.sin(this.angle - 0.85) : eye_y = this.y + 12*Math.sin(this.angle + 0.85)
         let eyeGradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
         eyeGradient.addColorStop(.4, "rgba(255, 255, 255, 0.4)")
         eyeGradient.addColorStop(.8, "rgba(255, 255, 255, 0.8)")
@@ -126,8 +153,9 @@ class HanebowFish {
         ctx.closePath();
         // iris
         ctx.beginPath();
-        let iris_x = this.x + (14 * Math.cos(this.angle));
-        let iris_y = this.y - (8 * Math.cos(this.angle));
+        let iris_y;
+        let iris_x = this.x + 8*Math.cos(this.angle - 0.85)
+        this.angle >= (3 * Math.PI / 2) || this.angle < (Math.PI / 2) ? iris_y = this.y + 12*Math.sin(this.angle - 0.85) : iris_y = this.y + 12*Math.sin(this.angle + 0.85)
         let irisGradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
         irisGradient.addColorStop(1, "rgba(255, 20, 147, 0.6)")
         ctx.ellipse(iris_x, iris_y, 3, 6, this.angle, 0, Math.PI * 2);
@@ -143,12 +171,14 @@ class HanebowFish {
         if (this.x >= canvas.width) {
             this.speed *= -1;
             this.x = canvas.width;
+            this.angle += 1;
         } else if (this.x <= 0) {
             this.speed *= -1;
             this.x = 0;
         }
         
         this.x += this.speed;
+        this.y -= this.speed/2;
     }
 }
 
@@ -207,7 +237,7 @@ function init() {
             };
         }
         if (!overlapping) {
-            fishes.push(new HanebowFish(eye.x, eye.y, 0))
+            fishes.push(new HanenbowFish(eye.x, eye.y, 0))
         }
         counter++
     }
@@ -245,8 +275,9 @@ function animate(){
         ctx.stroke();
     }
 
-    const stick = new LaunchingCannon(canvas.height);
-    stick.draw();
+    const launcher = new LaunchingLeaf(canvas.height);
+    // stick.update(stick.rotationAngle + Math.PI / 180);
+    launcher.draw();
 
     fishes.map((f) => {
 		f.update();
