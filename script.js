@@ -9,7 +9,8 @@ let bubbles = [];
 
 let mouse = {
     x: canvas.width/2,
-    y: canvas.height/2
+    y: canvas.height/2,
+    clicked: false
 }
 
 window.addEventListener('mousemove',
@@ -18,44 +19,68 @@ function(event) {
     mouse.y = event.y;
 })
 
-class LaunchingLeaf {
-    constructor(y) {
-        this.x = 150;
-        this.y = canvas.height;
-        this.radius = 200;  
-        this.cannonWidth = 40;
-        this.cannonHeight = 100;
-        this.rotationAngle = 0; 
-    }
+// Event listener for mouse click
+window.addEventListener('mousedown', function(event) {
+    mouse.clicked = true;
+});
 
+window.addEventListener('mouseup', function(event) {
+    mouse.clicked = false;
+});
+
+class LaunchingLeaf {
+    constructor() {
+        this.x = 150;
+        this.y = canvas.height - 100;
+        this.radius = 60;
+        this.rotationAngle = 0;
+        this.initialAngle = 0;
+        this.clicked = false;
+    }
+    
     draw() {
         // angle
-        let leaf_dx = mouse.x - this.x;
-        let leaf_dy = mouse.y - this.y;
-        theta = Math.atan2(leaf_dy, leaf_dx);
-        // leaf
         ctx.save();
-        ctx.translate(200, canvas.height - 100);
-        ctx.rotate(theta + Math.PI/2);
+        ctx.translate(this.x, this.y);
+        if (mouse.clicked) {
+            let leaf_dx = mouse.x - this.x;
+            let leaf_dy = mouse.y - this.y;
+            let angle = Math.atan2(leaf_dy, leaf_dx);
+            this.rotationAngle = angle + Math.PI / 2;
+            this.initialAngle = this.rotationAngle;
+        }
+        // leaf
+        ctx.rotate(this.initialAngle);
         ctx.beginPath();
-        ctx.moveTo(0, -100);
-        ctx.lineTo(60, 100);
-        ctx.lineTo(-60, 100);
+        ctx.arc(0, 0, this.radius, 0, Math.PI, false);
         ctx.closePath();
         let leafGradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
         leafGradient.addColorStop(1, "rgba(0, 255, 0, 0.5)");
         ctx.fillStyle = leafGradient;
         ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        if (mouse.clicked) {
+            ctx.rotate(this.rotationAngle);
+        }
         ctx.beginPath();
-        ctx.arc(0, 100, 60, 0, Math.PI, false);
+        ctx.moveTo(0, -3*this.radius);
+        let controlX = this.radius * Math.cos(Math.PI);
+        let controlY = this.radius * Math.sin(Math.PI);
+        ctx.lineTo(controlX, controlY);
+        ctx.lineTo(-controlX, -controlY);        
         ctx.closePath();
         ctx.fillStyle = leafGradient;
         ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(0, -3*this.radius);
+        ctx.lineTo(0, this.radius);
+        ctx.strokeStyle = 'rgb(0, 128, 0)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.closePath();
         ctx.restore();
-    }
-
-    update(rotationAngle) {
-        this.rotationAngle = rotationAngle;
     }
 }
 
@@ -100,7 +125,7 @@ class HanenbowFish {
         this.x = x;
         this.y = y;
         this.angle = angle;
-        this.radius = 20;
+        this.radius = 17.5;
         this.time = 0;
         this.speed = 6;
         this.accelerationY = 0;
@@ -276,7 +301,6 @@ function animate(){
     }
 
     const launcher = new LaunchingLeaf(canvas.height);
-    // stick.update(stick.rotationAngle + Math.PI / 180);
     launcher.draw();
 
     fishes.map((f) => {
